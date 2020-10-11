@@ -1,9 +1,11 @@
 """
 Initiating the command line and run the command using the subprocess module
 """
-
+import os
+import signal
 import subprocess
 
+from lib.constants import *
 from lib.logger import Log
 
 
@@ -22,6 +24,7 @@ class Runner:
     def __init__(self, outputFile):
         self.__outputFile = outputFile
         self.__run = None
+        self.__processKilled = False
 
     def buildCommand(self):
         """
@@ -33,15 +36,29 @@ class Runner:
             ffmpeg -video_size 1366x768 -framerate 30 -f x11grab -i :0.0+0,0 -c:v libx264rgb -crf 0 -preset ultrafast $1
 
         """
-        command = "ffmpeg " \
-                  "-video_size 1366x768 " \
-                  "-framerate 30 " \
-                  "-f x11grab " \
-                  "-i :0.0+0,0 " \
-                  "-c:v libx264rgb " \
-                  "-crf 0 " \
-                  "-preset ultrafast " \
-                  + str(self.__outputFile)
+        command = ["ffmpeg",
+                   "-y",
+                   "-video_size",
+                   VIDEO_SIZE,
+                   "-framerate",
+                   FPS,
+                   "-f",
+                   VIDEO_FORMAT,
+                   "-i",
+                   ":0.0+0,0",
+                   "-f",
+                   AUDIO_FORMAT,
+                   "-ac",
+                   "2",
+                   "-i",
+                   AUDIO_DEVICE,
+                   "-acodec",
+                   AUDIO_CODEC,
+                   "-vcodec",
+                   VIDEO_CODEC,
+                   "-strict",
+                   "experimental",
+                   str(self.__outputFile)]
         return command
 
     def runCommand(self):
@@ -52,11 +69,12 @@ class Runner:
         self.__run = subprocess.Popen(args=self.buildCommand(),
                                       stdout=subprocess.PIPE,
                                       stderr=subprocess.STDOUT,
-                                      shell=True,
-                                      universal_newlines=True)
+                                      universal_newlines=True,
+                                      preexec_fn=os.setsid)
 
-        for _ in iter(self.__run.stdout.readlines, ""):
-            print(_)
+        if not self.__processKilled:
+            for _ in iter(self.__run.stdout.readlines, ""):
+                pass
 
         self.__run.stdout.close()
 
@@ -64,7 +82,10 @@ class Runner:
             Log.e("Error occurred while running the PyRecorder Command line.")
             raise ChildProcessError("It's not working")
 
-    def terminate(self):
+        return
+
+    def terminateCommand(self):
         if self.__run is not None:
-            self.__run.terminate()
+            os.killpg(os.getpgid(self.__run.pid), signal.SIGTERM)
+            self.__processKilled = True
         Log.i("Recording saved successfully")

@@ -32,8 +32,10 @@ class App(QWidget):
         self.setWindowIcon(QtGui.QIcon('icons/logo.png'))
         self.show()
 
-        self.filePath = QLineEdit()
         self.controller = Controller()
+
+        self.filePath = QLineEdit()
+        self.filePath.setText("/home/atul/")
 
         theme = QAction(QIcon('icons/dark_mode.png'), 'Change Theme', self)
         theme.setShortcut('Ctrl+D')
@@ -126,7 +128,8 @@ class App(QWidget):
         QMessageBox.question(self, 'Message', msg, QMessageBox.Ok)
 
     def stop(self):
-        self.controller.terminate()
+        if self.controller is not None:
+            self.controller.terminate()
 
 
 def main():

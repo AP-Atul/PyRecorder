@@ -1,9 +1,9 @@
 import os
 
-from PyQt5.QtCore import QThread, pyqtSignal, QObject
+from PyQt5.QtCore import QThread, pyqtSignal
 
-from lib.logger import Log
 from lib.ffmpegRunner import Runner
+from lib.logger import Log
 
 
 class Controller(QThread):
@@ -33,10 +33,10 @@ class Controller(QThread):
 
     def terminate(self):
         if self.__runner is not None:
-            self.__runner.terminate()
+            self.__runner.terminateCommand()
             self.output.emit("Recording saved.")
         else:
-            print("Runner is off")
+            self.output.emit("Recording has not yet started.")
 
     def __showErrorDialog(self, message):
         self.output.emit(message)
